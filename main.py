@@ -47,8 +47,8 @@ def update_coin_in_database(symbol, metrics, cursor):
         change_5m = metrics['3']
         change_15m = metrics['0']
         marketcap = metrics['40']
-        open_interest = metrics['10'][1]
-        oi_change_15m = metrics['6'][1]
+        open_interest = metrics['10'][0]
+        oi_change_15m = metrics['6'][0]
 
         # Check if the symbol exists in the database before updating
         if check_symbol_exists(symbol, cursor):
