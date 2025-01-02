@@ -1,0 +1,7 @@
+pymysql
+websockets==13.1
+requests
+mysql-connector-python
+schedule
+flask
+flask-cors
