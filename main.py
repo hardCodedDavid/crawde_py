@@ -9,9 +9,9 @@ logging.basicConfig(level=logging.INFO)
 # MySQL database connection details
 DB_CONFIG = {
     'host': 'localhost',
-    'user': 'root',
-    'password': '',
-    'database': 'prototype'
+    'database': 'itrust_test',
+    'user': 'itrust_test_db',
+    'password': 'Itrust@2025'
 }
 
 # API endpoint
@@ -40,7 +40,6 @@ def check_symbol_exists(symbol, cursor):
         logging.error(f"Error checking if {symbol} exists in database: {e}")
         return False
 
-
 def update_coin_in_database(symbol, metrics, cursor):
     try:
         # Extract only the required data for price and change_15m
@@ -66,7 +65,6 @@ def update_coin_in_database(symbol, metrics, cursor):
             logging.info(f"Symbol {symbol} does not exist in the database. Skipping update.")
     except Exception as e:
         logging.error(f"Error updating {symbol} in database: {e}")
-
 
 def update_database():
     # Fetch data from API
