@@ -3,16 +3,17 @@ import asyncio
 import websockets
 import json
 from decimal import Decimal
+from collections import defaultdict
 
 # Initialize MySQL connection
-connection = pymysql.connect(host='localhost', user='itrust_test_db', password='Itrust@2025', db='itrust_test')
+connection = pymysql.connect(host='localhost', user='root', password='', db='prototype')
 
 # Set the transaction isolation level
 with connection.cursor() as cursor:
     cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
 
 # Global variable to store the last prices for each symbol and set to hold connected clients
-last_data = {}
+last_data = defaultdict(dict)
 connected_clients = set()
 
 def convert_decimal_to_float(data):
@@ -43,7 +44,14 @@ def fetch_latest_data():
     try:
         with connection.cursor() as cursor:
             sql = """
-            SELECT symbol, price, change_5m, change_15m, marketcap, open_interest, oi_change_15m
+            SELECT 
+                symbol, price, change_5m, change_15m, change_1h, change_8h, change_1d,
+                volatility_5m, volatility_15m, volatility_1h,
+                ticks_5m, ticks_15m, ticks_1h,
+                vdelta_5m, vdelta_15m, vdelta_1h, vdelta_8h, vdelta_1d,
+                volume_5m, volume_15m, volume_1h, volume_8h, volume_1d,
+                oi_change_5m, oi_change_15m, oi_change_1h, oi_change_1d, oi_change_8h,
+                funding_rate, open_interest, marketcap, btc_correlation_1d, eth_correlation_1d
             FROM coins
             """
             cursor.execute(sql)
@@ -53,10 +61,44 @@ def fetch_latest_data():
                     "price": convert_decimal_to_float(price),
                     "change_5m": convert_decimal_to_float(change_5m),
                     "change_15m": convert_decimal_to_float(change_15m),
-                    "marketcap": convert_decimal_to_float(marketcap),
+                    "change_1h": convert_decimal_to_float(change_1h),
+                    "change_8h": convert_decimal_to_float(change_8h),
+                    "change_1d": convert_decimal_to_float(change_1d),
+                    "volatility_5m": convert_decimal_to_float(volatility_5m),
+                    "volatility_15m": convert_decimal_to_float(volatility_15m),
+                    "volatility_1h": convert_decimal_to_float(volatility_1h),
+                    "ticks_5m": convert_decimal_to_float(ticks_5m),
+                    "ticks_15m": convert_decimal_to_float(ticks_15m),
+                    "ticks_1h": convert_decimal_to_float(ticks_1h),
+                    "vdelta_5m": convert_decimal_to_float(vdelta_5m),
+                    "vdelta_15m": convert_decimal_to_float(vdelta_15m),
+                    "vdelta_1h": convert_decimal_to_float(vdelta_1h),
+                    "vdelta_8h": convert_decimal_to_float(vdelta_8h),
+                    "vdelta_1d": convert_decimal_to_float(vdelta_1d),
+                    "volume_5m": convert_decimal_to_float(volume_5m),
+                    "volume_15m": convert_decimal_to_float(volume_15m),
+                    "volume_1h": convert_decimal_to_float(volume_1h),
+                    "volume_8h": convert_decimal_to_float(volume_8h),
+                    "volume_1d": convert_decimal_to_float(volume_1d),
+                    "oi_change_5m": convert_decimal_to_float(oi_change_5m),
+                    "oi_change_15m": convert_decimal_to_float(oi_change_15m),
+                    "oi_change_1h": convert_decimal_to_float(oi_change_1h),
+                    "oi_change_1d": convert_decimal_to_float(oi_change_1d),
+                    "oi_change_8h": convert_decimal_to_float(oi_change_8h),
+                    "funding_rate": convert_decimal_to_float(funding_rate),
                     "open_interest": convert_decimal_to_float(open_interest),
-                    "oi_change_15m": convert_decimal_to_float(oi_change_15m)
-                } for symbol, price, change_5m, change_15m, marketcap, open_interest, oi_change_15m in results
+                    "marketcap": convert_decimal_to_float(marketcap),
+                    "btc_correlation_1d": convert_decimal_to_float(btc_correlation_1d),
+                    "eth_correlation_1d": convert_decimal_to_float(eth_correlation_1d)
+                } for (
+                    symbol, price, change_5m, change_15m, change_1h, change_8h, change_1d,
+                    volatility_5m, volatility_15m, volatility_1h,
+                    ticks_5m, ticks_15m, ticks_1h,
+                    vdelta_5m, vdelta_15m, vdelta_1h, vdelta_8h, vdelta_1d,
+                    volume_5m, volume_15m, volume_1h, volume_8h, volume_1d,
+                    oi_change_5m, oi_change_15m, oi_change_1h, oi_change_1d, oi_change_8h,
+                    funding_rate, open_interest, marketcap, btc_correlation_1d, eth_correlation_1d
+                ) in results
             }
     except Exception as e:
         print(f"Error fetching data from the database: {e}")
@@ -74,7 +116,7 @@ async def monitor_price():
             for symbol, current_values in current_data.items():
                 last_values = last_data.get(symbol)
 
-                if last_values != current_values:
+                if last_values != current_values:  # Only update if there's a change
                     print(f"Data for {symbol} changed: {current_values} ✅")
                     await send_price_update(symbol, current_values)
                     last_data[symbol] = current_values
@@ -87,11 +129,11 @@ async def monitor_price():
                     print(f"Data for {symbol} removed.")
                     del last_data[symbol]
 
-            # Sleep for a short time before checking again (e.g., 1 second)
-            await asyncio.sleep(0.1)
+            # Sleep for a more reasonable time before checking again (e.g., 1 seconds)
+            await asyncio.sleep(1)
         except Exception as e:
             print(f"Error in monitor_price: {e}")
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
 
 async def echo(websocket, path):
     """Handle incoming WebSocket connections."""
@@ -108,13 +150,11 @@ async def echo(websocket, path):
     finally:
         connected_clients.remove(websocket)  # Remove client when they disconnect
 
-
 async def start_websocket_server():
     """Start WebSocket server."""
     server = await websockets.serve(echo, "localhost", 6789)  # Port 6789 matches the client
     print("WebSocket server running on ws://localhost:6789")
     await server.wait_closed()
-
 
 async def main():
     """Run both the WebSocket server and the price monitor concurrently."""
