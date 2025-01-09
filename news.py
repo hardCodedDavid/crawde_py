@@ -8,7 +8,7 @@ from datetime import datetime
 from dateutil import parser
 
 # Database Configuration
-DB_CONFIG = {
+db_config = {
     'host': 'localhost',
     'database': 'itrust_test',
     'user': 'itrust_test_db',
