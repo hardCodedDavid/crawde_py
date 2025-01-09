@@ -6,7 +6,7 @@ from decimal import Decimal
 from collections import defaultdict
 
 # Initialize MySQL connection
-connection = pymysql.connect(host='localhost', user='root', password='', db='prototype')
+connection = pymysql.connect(host='localhost', user='itrust_test_db', password='Itrust@2025', db='itrust_test')
 
 # Set the transaction isolation level
 with connection.cursor() as cursor:
