@@ -144,4 +144,4 @@ if __name__ == "__main__":
         update_database()
         elapsed_time = time.time() - start_time
         print(f"Elapsed time for update: {elapsed_time:.2f} seconds")
-        time.sleep(max(0, 2 - elapsed_time))  # Update interval of 2 Seconds
+        time.sleep(max(0, 5 - elapsed_time))  # Update interval of 2 Seconds

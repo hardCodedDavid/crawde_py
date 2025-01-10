@@ -129,8 +129,8 @@ async def monitor_price():
                     print(f"Data for {symbol} removed.")
                     del last_data[symbol]
 
-            # Sleep for a more reasonable time before checking again (e.g., 1 seconds)
-            await asyncio.sleep(1)
+            # Sleep for a more reasonable time before checking again (e.g., 5 seconds)
+            await asyncio.sleep(5)
         except Exception as e:
             print(f"Error in monitor_price: {e}")
             await asyncio.sleep(5)
