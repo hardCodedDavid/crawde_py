@@ -56,11 +56,14 @@ def save_to_db(news_data):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
 
+    # Check if news item already exists based on title or source_url
     insert_query = (
         "INSERT INTO news (id, title, description, symbol, source, source_url, img, published_at, company, score_tb, "
         "score_vd, score_af, sentiment_score, created_at, updated_at) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
+
+    check_query = "SELECT COUNT(*) FROM news WHERE title = %s OR source_url = %s"
 
     for news in news_data:
         title = news.get('title', '')
@@ -81,7 +84,15 @@ def save_to_db(news_data):
         # Current timestamp
         timestamp = datetime.now()
 
-        # Insert data into the database
+        # Check if the news item already exists
+        cursor.execute(check_query, (title, source_url))
+        result = cursor.fetchone()
+
+        if result[0] > 0:
+            print(f"Skipping already existing news: {title}")
+            continue  # Skip this news item if it already exists
+
+        # Insert data into the database if it doesn't exist
         cursor.execute(insert_query, (
             news_id, title, description, symbol, source, source_url, img, published_at, 'FMP',
             round(score_tb, 2), round(score_vd, 2), round(score_af, 2), round(sentiment_score, 2), timestamp, timestamp
@@ -90,7 +101,7 @@ def save_to_db(news_data):
     connection.commit()
     cursor.close()
     connection.close()
-
+    
 def main():
     """Main function to fetch, analyze, and store news."""
     print("Fetching news data...")
